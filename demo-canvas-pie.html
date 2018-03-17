@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>饼图</title>
+</head>
+
+<body>
+    <div class="pie-box">
+        <canvas class="pie-chart"></canvas>
+    </div>
+    <script type="text/javascript">
+    window.onload = function() {
+        var canvas = document.querySelector('.pie-chart');
+        var context = canvas.getContext('2d');
+
+        (function(window, document) {
+            var pieCxt = null;
+            var PieChart = function(cxt, options = {}) {
+                console.log(context);
+                pieCxt = cxt || document.querySelector(".pie-chart").getContext('2d');
+
+                pieCxt.canvas.width = options.width || 800;
+                pieCxt.canvas.height = options.height || 600;
+
+                //画布宽高
+                this.canvasWidth = pieCxt.canvas.width;
+                this.canvasHeight = pieCxt.canvas.height;
+
+                //圆心
+                this.x0 = this.canvasWidth / 2;
+                this.y0 = this.canvasHeight / 2;
+
+                //半径
+                this.radius = 150;
+
+                //title延伸的线
+                this.outLine = 20;
+
+                this.titleFont = "16px 微软雅黑";
+                this.descFont = "12px 微软雅黑";
+                // 描述的矩形大小
+                this.descRectW = 30;
+                this.descRectH = 16;
+
+                this.space = 20;
+                this.descSpace = 10;
+
+
+            }
+
+            function getRandomColor() {
+                return "rgb(" + Math.floor(Math.random() * 215) + "," + Math.floor(Math.random() * 215) + "," + Math.floor(Math.random() * 215) + ")";
+            }
+
+            PieChart.prototype.init = function(data) {
+                this.drawPie(data);
+            }
+
+            PieChart.prototype.drawPie = function(data) {
+
+                var that = this;
+                //reduce返回的任何值都会作为第一个参数,自动传给下一项
+                var result = data.reduce(function(prev, cur, index, array) {
+                    return { num: prev.num + cur.num };
+                });
+
+                var total = result.num;
+                var startAngle = 0;
+                data.forEach(function(item, i) {
+                    var ratio = item.num / total,
+                        angle = ratio * Math.PI * 2;
+
+                    //开始绘画
+                    pieCxt.beginPath();
+                    pieCxt.moveTo(that.x0, that.y0);
+
+                    /*arc:x,y,radius,startAngle,endAngle,anticlockwise*/
+                    /*1.1 圆心  x y */
+                    /*1.2 半径  radius */
+                    /*1.3 起始弧度 startAngle*/
+                    /*1.4 结束弧度 endAngle*/
+                    /*1.5 绘制的方向 anticlockwise 默认是顺时针 false  逆时针 true */
+                    pieCxt.arc(that.x0, that.y0, that.radius, startAngle, startAngle + angle);
+
+                    var color = pieCxt.fillStyle = getRandomColor();
+
+                    pieCxt.fill();
+                    that.drawTitle(angle / 2 + startAngle, item.title, color);
+                    //绘制描述
+                    that.drawDesc(i, item.title);
+                    startAngle += angle;
+                });
+
+            }
+
+            PieChart.prototype.drawTitle = function(angle, title, color) {
+
+                pieCxt.font = this.titleFont;
+                //最长边
+                var longLine = this.radius + this.outLine;
+
+                //直角边
+                var outLineX = Math.cos(angle) * longLine + this.x0;
+                var outLineY = Math.sin(angle) * longLine + this.y0;
+                var txtWidth = pieCxt.measureText(title).width;
+
+                pieCxt.moveTo(this.x0, this.y0);
+                pieCxt.lineTo(outLineX, outLineY);
+
+                if (outLineX > this.x0) {
+                    pieCxt.lineTo(outLineX + txtWidth, outLineY);
+                } else {
+                    pieCxt.lineTo(outLineX - txtWidth, outLineY);
+                    pieCxt.textAlign = "right";
+                }
+
+
+                //文字相关属性设置需要设置在绘制之前
+                pieCxt.textBaseline = "bottom";
+                pieCxt.fillText(title, outLineX, outLineY);
+
+
+                pieCxt.textFont = this.titleFont;
+                pieCxt.strokeStyle = color;
+
+                pieCxt.stroke();
+            }
+
+
+            PieChart.prototype.drawDesc = function(index, title) {
+
+                var y = this.space + index * (this.descRectH + this.space);
+                pieCxt.moveTo(this.space, this.space);
+                pieCxt.fillRect(this.space, y, this.descRectW, this.descRectH);
+
+                pieCxt.font =this.descFont;
+
+                pieCxt.textAlign = "left";
+                pieCxt.textBaseline ="top";
+                pieCxt.fillText(title, this.space + this.descSpace + this.descRectW, y);
+            }
+            return window.PieChart = PieChart;
+        })(window, document);
+
+        var data = [
+            { title: '15-20岁', num: 10 },
+            { title: '21-25岁', num: 30 },
+            { title: '26-30岁', num: 10 },
+            { title: '31-35岁', num: 5 },
+            { title: '35岁以上', num: 15 }
+        ];
+        var pie = new PieChart();
+        pie.init(data);
+
+    }
+    </script>
+</body>
+
+</html>

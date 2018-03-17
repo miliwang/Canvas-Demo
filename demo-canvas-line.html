@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>原生js折线图</title>
+    <style type="text/css">
+    * {
+        margin: 0;
+        padding: 0;
+    }
+    </style>
+</head>
+
+<body>
+    <div class="line-canvas">
+        <canvas id="line">
+            <p>当前浏览器版本为较低版本，请更新最新版本</p>
+        </canvas>
+    </div>
+    <script type="text/javascript">
+    window.onload = function() {
+        var canvas = document.getElementById('line');
+        var context = canvas.getContext('2d');
+
+        (function() {
+            var context;
+
+            //声明构造函数 --- LineChart(折线图)
+            function LineChart(ctx, options = {}) {
+                context = ctx || document.querySelector('#line').getContext('2d');
+
+                //画布大小
+                this.canvasWidth = options.width || 800;
+                this.canvasHeight = options.height || 500;
+
+                // 设置网格大小
+                this.gridSize = options.gridSize || 20;
+                // 网格颜色
+                this.gridColor = options.gridColor || "#ccc";
+                // 箭头大小
+                this.arraowSize = options.arraowSize || 10;
+
+                //折线间点的大小
+                this.dottedSize = options.dottedSize || 8;
+                // 画布与坐标间距
+                this.space = options.space || 20;
+
+                // 设置 x，y坐标原点
+                this.x0 = options.x0 || this.space;
+                this.y0 = options.y0 || this.canvasHeight - this.space;
+            }
+
+            //折线初始化
+            LineChart.prototype.init = function(data) {
+            	// 画布大小初始化
+                context.canvas.width = this.canvasWidth;
+                context.canvas.height = this.canvasHeight;
+                this.drawGrid();
+                this.drawAxis();
+                this.drawPoint(data);
+            }
+
+            //绘制网格
+            LineChart.prototype.drawGrid = function() {
+                var xTotal = Math.floor(this.canvasHeight / this.gridSize);
+                var yTotal = Math.floor(this.canvasWidth / this.gridSize);
+
+                // 横向线
+                drawGridLine(xTotal, {
+                    canvasWidth: this.canvasWidth,
+                    gridSize: this.gridSize,
+                    gridColor: this.gridColor
+                }, true);
+
+                //纵向线                
+                drawGridLine(yTotal, {
+                    canvasHeight: this.canvasHeight,
+                    gridSize: this.gridSize,
+                    gridColor: this.gridColor
+                });
+            }
+
+            //这里不是构造函数的方法不能使用this（this指向window）
+            //声明函数 --- 绘画网格的每条线
+            function drawGridLine(total, options, isx = false) {
+                var moveX = 0,
+                    moveY = 0,
+                    lineX = options.canvasWidth,
+                    lineY = 0,
+                    gridSize = options.gridSize;
+                if (!isx) {
+                    moveY = 0;
+                    lineY = options.canvasHeight;
+                }
+
+                for (var i = 1; i <= total; i++) {
+                    if (isx) {
+                        moveY = gridSize * i - 0.5;
+                        lineY = gridSize * i - 0.5;
+                    } else {
+                        moveX = gridSize * i - 0.5;
+                        lineX = gridSize * i - 0.5;
+                    }
+                    //开启新的路径
+                    context.beginPath();
+                    context.moveTo(moveX, moveY);
+                    context.lineTo(lineX, lineY);
+
+                    context.strokeStyle = options.gridColor;
+                    context.stroke();
+                }
+            }
+
+            //声明坐标函数
+            LineChart.prototype.drawAxis = function() {
+                // 画横坐标
+                context.beginPath();
+                context.moveTo(this.x0, this.y0);
+                context.lineTo(this.canvasWidth - this.space, this.y0);
+                context.lineTo(this.canvasWidth - this.space - this.arraowSize, this.y0 + this.arraowSize / 2);
+                context.lineTo(this.canvasWidth - this.space - this.arraowSize, this.y0 - this.arraowSize / 2);
+                context.lineTo(this.canvasWidth - this.space, this.y0);
+
+                context.strokeStyle = "#000";
+                context.stroke();
+                context.fill();
+
+                // 画纵坐标
+                context.beginPath();
+                context.moveTo(this.space, this.y0);
+                context.lineTo(this.space, this.space);
+
+                context.lineTo(this.space - this.arraowSize / 2, this.space + this.arraowSize);
+                context.lineTo(this.space + this.arraowSize / 2, this.space + this.arraowSize);
+                context.lineTo(this.space, this.space);
+
+                context.strokeStyle = "#000";
+                context.stroke();
+                context.fill();
+            }
+
+            //画折线的每个线条           
+            var drawLine = function(moveX,moveY,lineX,lineY) {
+            	context.beginPath();
+            	context.moveTo(moveX,moveY);
+            	context.lineTo(lineX,lineY);
+            	context.stroke();
+            }
+
+            //画每个折线的折点
+            LineChart.prototype.drawPoint = function(data) {
+
+                var oldX = this.x0,
+                    odlY = this.y0,
+                    pointSize = this.dottedSize/2;
+
+                for (var i = 0, canvasX, canvasY; i < data.length; i++) {
+                    canvasX = this.x0 + data[i].x;
+                    canvasY = this.y0 - data[i].y;
+
+                    context.beginPath();
+                    context.moveTo(canvasX-pointSize,canvasY-pointSize);
+                    context.lineTo(canvasX+pointSize,canvasY-pointSize);
+                    context.lineTo(canvasX+pointSize,canvasY+pointSize);
+                    context.lineTo(canvasX-pointSize,canvasY+pointSize);
+
+                    context.closePath();
+                    context.fill();
+
+                    drawLine(oldX,odlY,canvasX,canvasY);
+                    oldX=canvasX;
+                    odlY=canvasY;
+                }
+            }
+
+            return window.LineChart = LineChart;
+        })(window, document);
+
+        var lineChart = new LineChart();
+
+        var data = [
+            { x: 100, y: 80 },
+            { x: 200, y: 190 },
+            { x: 300, y: 330 },
+            { x: 400, y: 260 },
+            { x: 500, y: 110 }
+        ];
+
+        lineChart.init(data);
+    }
+    </script>
+</body>
+
+</html>
